@@ -16,7 +16,7 @@ function toggleCheckbox() {
         });
     });
 }
-toggleCheckbox();
+
 //end чекбокс
 
 
@@ -37,7 +37,7 @@ function toggleCart() {
         document.body.style.overflow = '';
     });
 }
-toggleCart();
+
 
 //end корзина
 
@@ -88,7 +88,7 @@ function workCart() {
         }
     }
 }
-workCart();
+
 //end работа с товаром
 
 
@@ -108,19 +108,18 @@ function actionPage() {
     max.addEventListener('change', filterDuo);
 
     //объединение двух фильтров
-    function filterDuo()
-    {
+    function filterDuo() {
         cards.forEach((card) => {
             const cardPrice = card.querySelector('.card-price');
             const price = parseFloat(cardPrice.textContent);
-            
+
             if ((min.value && price < min.value) || (price > max.value && max.value)) {
                 card.parentNode.style.display = "none";
                 if (discountCheckbox.checked) {
                     if (!card.querySelector('.card-sale')) {
                         card.parentNode.style.display = "none";
                     }
-                } 
+                }
             } else {
                 card.parentNode.style.display = "";
                 if (discountCheckbox.checked) {
@@ -145,10 +144,106 @@ function actionPage() {
                 card.parentNode.style.display = '';
             }
         });
-        search.value='';
+        search.value = '';
     });
-   
+
 }
-actionPage();
+
 
 //end фильтр акции
+
+//получение данных с сервера
+
+function getData() {
+    const goodsWrapper = document.querySelector('.goods');
+    return fetch('../db/db.json')
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Данные не были получены, ошибка: ' + response.status);
+            }
+        })
+        .then((data) => {
+            return data;
+        })
+        .catch(err => {
+            console.warn(err);
+            goodsWrapper.innerHTML = '<div style="font-size:1.5em; position:absolute; left:40%; top:20%;">Упс что-то пошло не так</div>';
+        });
+}
+
+
+//выводим карточки товара
+function renderCards(data) {
+    const goodsWrapper = document.querySelector('.goods');
+    data.goods.forEach((good) => {
+        const card = document.createElement('div');
+        card.className = 'col-12 col-md-6 col-lg-4 col-xl-3';
+        card.innerHTML = `
+            <div class="card" data-category="${good.category}">
+                ${good.sale?'<div class="card-sale">🔥Hot Sale🔥</div>': ''}
+                <div class="card-img-wrapper">
+                    <span class="card-img-top"
+                        style="background-image: url('${good.img}')"></span>
+                </div>
+                <div class="card-body justify-content-between">
+                    <div class="card-price">${good.price} ₽</div>
+                    <h5 class="card-title">${good.title}</h5>
+                    <button class="btn btn-primary">В корзину</button>
+                </div>
+            </div>
+        `;
+        goodsWrapper.appendChild(card);
+    })
+}
+//end получение данных с сервера
+
+function renderCatalog(){
+    const cards = document.querySelectorAll('.goods .card');
+    const category = new Set();
+    const catalogList = document.querySelector('.catalog-list');
+    const catalogBtn = document.querySelector('.catalog-button');
+    cards.forEach((card)=>{
+        category.add(card.dataset.category);
+    });
+
+    category.forEach((item)=>{
+        const li = document.createElement('li');
+        li.textContent=item;
+        catalogList.appendChild(li);
+    });
+
+    catalogBtn.addEventListener('click',(event)=>{
+        if( catalogList.parentNode.style.display)
+        {
+            catalogList.parentNode.style.display='';
+        }
+        else
+        {
+        catalogList.parentNode.style.display='flex';
+        }
+        if(event.target.tagName === 'LI')
+        {
+            cards.forEach((card)=>{
+                if(card.dataset.category!==event.target.textContent)
+                {
+                    card.parentNode.style.display='none';
+                }
+                else
+                {
+                    card.parentNode.style.display='';
+                }
+            });
+        }
+    });
+}
+
+getData().then((data) => {
+    renderCards(data);
+    toggleCheckbox();
+    toggleCart();
+    workCart();
+    actionPage();
+    renderCatalog(); 
+});
